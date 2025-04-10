@@ -1,0 +1,70 @@
+pipeline {
+    agent any
+    environment {
+        AWS_REGION = 'us-east-1'
+        AWS_ACCESS_KEY_ID = 'AWS_creds'
+        AWS_SECRET_ACCESS_KEY = 'AWS_creds'
+        S3_BUCKET = 'my-web-app-config-bucket'  // S3 Bucket where logs will be stored
+        DOCKER_HUB_REPO = "afrozmd/mydoc_images"
+        DOCKER_HUB_PASSWORD = "docker_access"
+        DOCKER_HUB_USERNAME = "docker_access"
+
+    }
+    stages {
+        stage('Terraform Init') {
+            steps {
+                script {
+                    sh 'terraform init'
+                }
+            }
+        }
+        stage('Terraform Apply') {
+            steps {
+                script {
+                    sh 'terraform apply -auto-approve'
+                }
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh 'docker build -t my-web-app . > docker_build.log 2>&1'  // Redirect output to a log file
+                }
+            }
+        }
+        stage('Push Docker Image to ECR') {
+            steps {
+                script {
+                    // Example: Push the image to AWS ECR
+                    sh '''
+                    $(aws ecr get-login --no-include-email --region $AWS_REGION)
+                    docker tag my-web-app:latest <aws_account_id>.dkr.ecr.$AWS_REGION.amazonaws.com/my-web-app:latest
+                    docker push <aws_account_id>.dkr.ecr.$AWS_REGION.amazonaws.com/my-web-app:latest
+                    '''
+                }
+            }
+        }
+
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    // Push the Docker image to Docker Hub
+                    sh 'docker push $DOCKER_HUB_REPO:latest'
+                }
+            }
+        }
+        stage('Upload Docker Build Log to S3') {
+            steps {
+                script {
+                    // Upload Docker build log to S3
+                    sh 'aws s3 cp docker_build.log s3://$S3_BUCKET/docker_build.log'
+                }
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()  // Clean workspace after pipeline
+        }
+    }
+}
