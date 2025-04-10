@@ -1,0 +1,92 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argoapps
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+      allowEmpty: true
+  project: management-tools
+  source:
+    repoURL: git@github.com:SreeVeerDevOps/k8sb31-argocd.git
+    targetRevision: HEAD
+    path: ArgoApps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ingress-nginx
+
+#Following Applications needed to be deployed after ingress controller 
+#deploy using above manifest...
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rollingupdate
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+      allowEmpty: true
+  project: rollingupdate
+  source:
+    repoURL: git@github.com:SreeVeerDevOps/k8sb31-argocd.git
+    targetRevision: HEAD
+    path: deploy
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: votingapp
+  namespace: argocd
+spec:
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: true
+      allowEmpty: true
+  project: votingapp
+  source:
+    repoURL: git@github.com:SreeVeerDevOps/k8sb31-argocd.git
+    targetRevision: HEAD
+    path: votingapp
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: votingapp
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: demoapp1
+  namespace: argocd
+spec:
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+    automated:
+      selfHeal: true
+      prune: true
+      allowEmpty: true
+  project: default
+  source:
+    repoURL: git@github.com:SreeVeerDevOps/k8sb31-argocd.git
+    targetRevision: HEAD
+    path: demoapp1
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: demoapp1
+
+
+
+#The above manifest can be deployed using echo '' | ku apply -f -
